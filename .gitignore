@@ -1,0 +1,6 @@
+*.wav
+*.tar.gz
+DeepSpeech/
+models/
+.vscode/
+__pycache__/

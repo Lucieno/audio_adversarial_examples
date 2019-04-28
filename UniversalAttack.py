@@ -49,6 +49,36 @@ from tf_logits import get_logits
 toks = " abcdefghijklmnopqrstuvwxyz'-"
 
 # %%
+def projection(v, eps, p):
+    """
+    Project the values in `v` on the L_p norm ball of size `eps`.
+
+    :param v: Array of perturbations to clip.
+    :type v: `np.ndarray`
+    :param eps: Maximum norm allowed.
+    :type eps: `float`
+    :param p: L_p norm to use for clipping. Only 1, 2 and `np.Inf` supported for now.
+    :type p: `int`
+    :return: Values of `v` after projection.
+    :rtype: `np.ndarray`
+    """
+    # Pick a small scalar to avoid division by 0
+    tol = 10e-8
+    v_ = v.reshape((v.shape[0], -1))
+
+    if p == 2:
+        v_ = v_ * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(v_, axis=1) + tol)), axis=1)
+    elif p == 1:
+        v_ = v_ * np.expand_dims(np.minimum(1., eps / (np.linalg.norm(v_, axis=1, ord=1) + tol)), axis=1)
+    elif p == np.inf:
+        v_ = np.sign(v_) * np.minimum(abs(v_), eps)
+    else:
+        raise NotImplementedError('Values of `p` different from 1, 2 and `np.inf` are currently not supported.')
+
+    v = v_.reshape(v.shape)
+    return v
+
+
 class Args:
     def __init__(self):
         self.input = ["0000.wav", "0001.wav", "0002.wav", "0003.wav", "0004.wav"]
@@ -292,4 +322,4 @@ for epoch in range(MAX):
                                 np.array(np.clip(np.round(new_input[ii]),
                                                 -2**15, 2**15-1),dtype=np.int16))
         unipertur += d
-                    
+        unipertur = projection(unipertur, 10 ** 3, np.inf)
