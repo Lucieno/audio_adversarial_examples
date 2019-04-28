@@ -230,7 +230,7 @@ if finetune is not None and len(finetune) > 0:
 # We'll make a bunch of iterations of gradient descent here
 now = time.time()
 MAX = num_iterations
-each_train = 10
+each_train = 20
 for epoch in range(MAX):
     print("Start of epcoh: %d"%epoch)
     n_fooled = 0
@@ -327,5 +327,7 @@ for epoch in range(MAX):
                                 np.array(np.clip(np.round(new_input[ii]),
                                                 -2**15, 2**15-1),dtype=np.int16))
         unipertur += d
-        unipertur = projection(unipertur, 10 ** 3, np.inf)
+        unipertur = projection(unipertur, 10 ** 3.25, np.inf)
     print("End of epcoh: %d, fooling rate: %f"%(epoch, float(n_fooled) / len(audios)))
+    wav.write("./audios/unipertur.wav", 16000,
+                np.array(np.clip(np.round(unipertur), -2**15, 2**15-1),dtype=np.int16))
