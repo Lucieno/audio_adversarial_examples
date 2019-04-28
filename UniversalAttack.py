@@ -81,7 +81,7 @@ def projection(v, eps, p):
 
 class Args:
     def __init__(self):
-        self.n_input = 30
+        self.n_input = 50
         self.input = ["./audios/%04d.wav"%i for i in range(self.n_input)]
         self.target = "example"
         self.out = ["./audios/final_adv%04d.wav"%i for i in range(self.n_input)]
@@ -330,4 +330,4 @@ for epoch in range(MAX):
         unipertur = projection(unipertur, 10 ** 3.25, np.inf)
     print("End of epcoh: %d, fooling rate: %f"%(epoch, float(n_fooled) / len(audios)))
     wav.write("./audios/unipertur.wav", 16000,
-                np.array(np.clip(np.round(unipertur), -2**15, 2**15-1),dtype=np.int16))
+                np.array(np.clip(np.round(unipertur[0]), -2**15, 2**15-1),dtype=np.int16))
