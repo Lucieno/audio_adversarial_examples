@@ -98,6 +98,7 @@ sess = tf.Session()
 finetune = []
 audios = []
 audio_lengths = []
+project_eps = 10 ** (75/20.)
 
 if args.out is None:
     assert args.outprefix is not None
@@ -241,7 +242,7 @@ for epoch in range(MAX):
         print("=" * 40)
         print("Training for audio: %d"%idx_audio)
         audio = audios[idx_audio]
-        print("unipertur L2:", np.sum(np.square(unipertur)))
+        print("unipertur L2:", np.mean(np.square(unipertur)))
         print("unipertur dB:", cal_dB(unipertur))
         sess.run(tforiginal.assign(np.array(audio) + unipertur))
         sess.run(tf.variables_initializer([tfdelta]))
@@ -293,6 +294,7 @@ for epoch in range(MAX):
                                                             train),
                                                             feed_dict)
             # Report progress
+            cur_loss = np.mean(cl)
             print("%.3f"%np.mean(cl), "\t", "\t".join("%.3f"%x for x in cl))
 
             logits = np.argmax(logits,axis=2).T
@@ -301,7 +303,7 @@ for epoch in range(MAX):
                 # if we have (or if it's the final epoch) then we
                 # should record our progress and decrease the
                 # rescale constant.
-                if (loss_fn == "CTC" and i%10 == 0 and res[ii] == "".join([toks[x] for x in target[ii]])) \
+                if (loss_fn == "CTC" and i == 0 and res[ii] == "".join([toks[x] for x in target[ii]])) \
                     or (i == MAX-1 and final_deltas[ii] is None):
                     # Get the current constant
                     rescale = sess.run(tfrescale)
@@ -327,11 +329,24 @@ for epoch in range(MAX):
 
                     # Just for debugging, save the adversarial example
                     # to /tmp so we can see it if we want
-                    if i == 0:
-                        wav.write("./audios/adv%04d.wav"%idx_audio, 16000,
-                                    np.array(np.clip(np.round(new_input[ii]), -2**15, 2**15-1),dtype=np.int16))
+                    wav.write("./audios/adv%04d.wav"%idx_audio, 16000,
+                                np.array(np.clip(np.round(new_input[ii]), -2**15, 2**15-1),dtype=np.int16))
+
+            if cur_loss < 1:
+                break
+
+        print("delta L2:", np.mean(np.square(d)))
+        print("delta dB:", cal_dB(d))
         unipertur += d
-        unipertur = projection(unipertur, 10 ** (75/float(20)), np.inf)
-    print("End of epcoh: %d, fooling rate: %f"%(epoch, float(n_fooled) / len(audios)))
+        unipertur = projection(unipertur, project_eps, np.inf)
+    fool_rate = float(n_fooled) / len(audios)
+    print("End of epcoh: %d, fooling rate: %f, project_eps: %f"%(epoch, fool_rate, project_eps))
+    if fool_rate > 0.85:
+        if project_eps < float(10 ** (40/20)):
+            break
+        else:
+            project_eps /= float(10 ** (5/20))
     wav.write("./audios/unipertur.wav", 16000,
                 np.array(np.clip(np.round(unipertur[0]), -2**15, 2**15-1),dtype=np.int16))
+
+sess.close()
