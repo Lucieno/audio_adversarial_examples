@@ -2,6 +2,7 @@
 import numpy as np
 import tensorflow as tf
 import argparse
+import random
 from shutil import copyfile
 
 import scipy.io.wavfile as wav
@@ -230,11 +231,14 @@ if finetune is not None and len(finetune) > 0:
 # We'll make a bunch of iterations of gradient descent here
 now = time.time()
 MAX = num_iterations
-each_train = 20
+each_train = 21
 for epoch in range(MAX):
     print("Start of epcoh: %d"%epoch)
     n_fooled = 0
-    for idx_audio in range(len(audios)):
+    shuffled_indices = list(range(len(audios)))
+    random.shuffle(shuffled_indices)
+    for idx_audio in shuffled_indices:
+        print("=" * 40)
         print("Training for audio: %d"%idx_audio)
         audio = audios[idx_audio]
         print("unipertur L2:", np.sum(np.square(unipertur)))
@@ -323,11 +327,11 @@ for epoch in range(MAX):
 
                     # Just for debugging, save the adversarial example
                     # to /tmp so we can see it if we want
-                    wav.write("./audios/adv%04d.wav"%idx_audio, 16000,
-                                np.array(np.clip(np.round(new_input[ii]),
-                                                -2**15, 2**15-1),dtype=np.int16))
+                    if i == 0:
+                        wav.write("./audios/adv%04d.wav"%idx_audio, 16000,
+                                    np.array(np.clip(np.round(new_input[ii]), -2**15, 2**15-1),dtype=np.int16))
         unipertur += d
-        unipertur = projection(unipertur, 10 ** 3.25, np.inf)
+        unipertur = projection(unipertur, 10 ** (75/float(20)), np.inf)
     print("End of epcoh: %d, fooling rate: %f"%(epoch, float(n_fooled) / len(audios)))
     wav.write("./audios/unipertur.wav", 16000,
                 np.array(np.clip(np.round(unipertur[0]), -2**15, 2**15-1),dtype=np.int16))
