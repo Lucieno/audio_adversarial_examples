@@ -82,7 +82,9 @@ def projection(v, eps, p):
 
 class Args:
     def __init__(self):
-        self.n_input = 50
+        self.n_input = 70
+        self.n_train = 50
+        self.n_test = self.n_input - self.n_train
         self.input = ["./audios/%04d.wav"%i for i in range(self.n_input)]
         self.target = "example"
         self.out = ["./audios/final_adv%04d.wav"%i for i in range(self.n_input)]
@@ -90,6 +92,7 @@ class Args:
         self.finetune = None
         self.lr = 100
         self.iterations = 100
+        self.each_train = 21
         self.l2penalty = float('inf')
 
 args = Args()
@@ -232,10 +235,10 @@ if finetune is not None and len(finetune) > 0:
 # We'll make a bunch of iterations of gradient descent here
 now = time.time()
 MAX = num_iterations
-each_train = 21
 for epoch in range(MAX):
     print("Start of epcoh: %d"%epoch)
-    n_fooled = 0
+    n_fooled_train = 0
+    n_fooled_test = 0
     shuffled_indices = list(range(len(audios)))
     random.shuffle(shuffled_indices)
     for idx_audio in shuffled_indices:
@@ -256,7 +259,7 @@ for epoch in range(MAX):
         sess.run(tfimportance.assign(c))
         sess.run(tfrescale.assign(np.ones((batch_size,1))))
 
-        for i in range(each_train):
+        for i in range(args.each_train):
             iteration = i
             now = time.time()
 
@@ -276,15 +279,21 @@ for epoch in range(MAX):
 
                     # Here we print the strings that are recognized.
                     res = ["".join(toks[int(x)] for x in y).replace("-","") for y in res] 
-                    if res[0] == args.target:
-                        n_fooled += 1
+                    if i == 0 and res[0] == args.target:
+                        if idx_audio > args.n_train:
+                            n_fooled_train += 1
+                        else:
+                            n_fooled_test += 1
                     print("\n".join(res)) 
                     # And here we print the argmax of the alignment.
                     res2 = np.argmax(logits,axis=2).T
                     res2 = ["".join(toks[int(x)] for x in y[:(l-1)//320]) for y,l in zip(res2,audio_lengths)]
                     print("\n".join(res2))
 
-                
+            if idx_audio >= args.n_train:
+                print("It was TEST")
+                break
+
             feed_dict = {}
             # Minimize delta
             # Actually do the optimization ste
@@ -295,7 +304,8 @@ for epoch in range(MAX):
                                                             feed_dict)
             # Report progress
             cur_loss = np.mean(cl)
-            print("%.3f"%np.mean(cl), "\t", "\t".join("%.3f"%x for x in cl))
+            if i % 10 == 0:
+                print("%.3f"%np.mean(cl), "\t", "\t".join("%.3f"%x for x in cl))
 
             logits = np.argmax(logits,axis=2).T
             for ii in range(batch_size):
@@ -339,13 +349,11 @@ for epoch in range(MAX):
         print("delta dB:", cal_dB(d))
         unipertur += d
         unipertur = projection(unipertur, project_eps, np.inf)
-    fool_rate = float(n_fooled) / len(audios)
-    print("End of epcoh: %d, fooling rate: %f, project_eps: %f"%(epoch, fool_rate, project_eps))
-    if fool_rate > 0.85:
-        if project_eps < float(10 ** (40/20)):
-            break
-        else:
-            project_eps /= float(10 ** (5/20))
+    fool_rate_train = float(n_fooled_train) / args.n_train
+    fool_rate_test = float(n_fooled_test) / args.n_test
+    print("End of epcoh: %d, training fooling rate: %f, testing fooling rate: %f, project_eps: %f"%(epoch, fool_rate_train, fool_rate_test, project_eps))
+    if fool_rate_test > 0.75:
+        project_eps /= float(10 ** (5/20))
     wav.write("./audios/unipertur.wav", 16000,
                 np.array(np.clip(np.round(unipertur[0]), -2**15, 2**15-1),dtype=np.int16))
 
