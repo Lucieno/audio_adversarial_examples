@@ -51,13 +51,13 @@ toks = " abcdefghijklmnopqrstuvwxyz'-"
 # %%
 class Args:
     def __init__(self):
-        self.input = ["0000.wav", "0001.wav", "0002.wav"]
+        self.input = ["0000.wav", "0001.wav", "0002.wav", "0003.wav", "0004.wav"]
         self.target = "example"
-        self.out = ["adver0000.wav", "adver0001.wav", "adver0002.wav"]
+        self.out = ["advr0000.wav", "adver0001.wav", "adver0002.wav", "adver0003.wav", "adver0004.wav"]
         self.outprefix = None
         self.finetune = None
         self.lr = 100
-        self.iterations = 5000
+        self.iterations = 100
         self.l2penalty = float('inf')
 
 args = Args()
@@ -202,7 +202,7 @@ MAX = num_iterations
 each_train = 10
 for epoch in range(MAX):
     for idx_audio in range(len(audios)):
-        print("Training for audio: %d", idx_audio)
+        print("Training for audio: %d"%idx_audio)
         audio = audios[idx_audio]
         print("unipertur L2:", np.sum(np.square(unipertur)))
         print("unipertur dB:", cal_dB(unipertur))
@@ -288,7 +288,7 @@ for epoch in range(MAX):
 
                     # Just for debugging, save the adversarial example
                     # to /tmp so we can see it if we want
-                    wav.write("/tmp/adv.wav", 16000,
+                    wav.write("./adv%04d.wav"%idx_audio, 16000,
                                 np.array(np.clip(np.round(new_input[ii]),
                                                 -2**15, 2**15-1),dtype=np.int16))
         unipertur += d
