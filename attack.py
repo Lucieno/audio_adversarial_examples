@@ -93,6 +93,7 @@ class Attack:
         # they are prefixed with qq_ just so that we know which
         # ones are ours so when we restore the session we don't
         # clobber them.
+        self.unipertur = unipertur = tf.Variable(np.zeros((batch_size, max_audio_len), dtype=np.float32), name='qq_unipertur')
         self.delta = delta = tf.Variable(np.zeros((batch_size, max_audio_len), dtype=np.float32), name='qq_delta')
         self.mask = mask = tf.Variable(np.zeros((batch_size, max_audio_len), dtype=np.float32), name='qq_mask')
         self.cwmask = cwmask = tf.Variable(np.zeros((batch_size, phrase_length), dtype=np.float32), name='qq_cwmask')
@@ -103,9 +104,11 @@ class Attack:
         self.target_phrase_lengths = tf.Variable(np.zeros((batch_size), dtype=np.int32), name='qq_phrase_lengths')
         self.rescale = tf.Variable(np.zeros((batch_size,1), dtype=np.float32), name='qq_phrase_lengths')
 
+        unipertur += delta
+
         # Initially we bound the l_infty norm by 2000, increase this
         # constant if it's not big enough of a distortion for your dataset.
-        self.apply_delta = tf.clip_by_value(delta, -2000, 2000)*self.rescale
+        self.apply_delta = tf.clip_by_value(unipertur, -2000, 2000)*self.rescale
 
         # We set the new input to the model to be the abve delta
         # plus a mask, which allows us to enforce that certain
@@ -174,7 +177,7 @@ class Attack:
         # object, and they should be all created only once in the
         # constructor. It works fine as long as you don't call
         # attack() a bunch of times.
-        sess.run(tf.variables_initializer([self.delta]))
+        sess.run(tf.variables_initializer([self.unipertur, self.delta]))
         sess.run(self.original.assign(np.array(audio)))
         sess.run(self.lengths.assign((np.array(lengths)-1)//320))
         sess.run(self.mask.assign(np.array([[1 if i < l else 0 for i in range(self.max_audio_len)] for l in lengths])))
