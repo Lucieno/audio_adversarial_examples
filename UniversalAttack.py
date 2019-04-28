@@ -81,9 +81,10 @@ def projection(v, eps, p):
 
 class Args:
     def __init__(self):
-        self.input = ["0000.wav", "0001.wav", "0002.wav", "0003.wav", "0004.wav"]
+        self.n_input = 30
+        self.input = ["./audios/%04d.wav"%i for i in range(self.n_input)]
         self.target = "example"
-        self.out = ["advr0000.wav", "adver0001.wav", "adver0002.wav", "adver0003.wav", "adver0004.wav"]
+        self.out = ["./audios/final_adv%04d.wav"%i for i in range(self.n_input)]
         self.outprefix = None
         self.finetune = None
         self.lr = 100
@@ -231,6 +232,8 @@ now = time.time()
 MAX = num_iterations
 each_train = 10
 for epoch in range(MAX):
+    print("Start of epcoh: %d"%epoch)
+    n_fooled = 0
     for idx_audio in range(len(audios)):
         print("Training for audio: %d"%idx_audio)
         audio = audios[idx_audio]
@@ -268,6 +271,8 @@ for epoch in range(MAX):
 
                     # Here we print the strings that are recognized.
                     res = ["".join(toks[int(x)] for x in y).replace("-","") for y in res] 
+                    if res[0] == args.target:
+                        n_fooled += 1
                     print("\n".join(res)) 
                     # And here we print the argmax of the alignment.
                     res2 = np.argmax(logits,axis=2).T
@@ -318,8 +323,9 @@ for epoch in range(MAX):
 
                     # Just for debugging, save the adversarial example
                     # to /tmp so we can see it if we want
-                    wav.write("./adv%04d.wav"%idx_audio, 16000,
+                    wav.write("./audios/adv%04d.wav"%idx_audio, 16000,
                                 np.array(np.clip(np.round(new_input[ii]),
                                                 -2**15, 2**15-1),dtype=np.int16))
         unipertur += d
         unipertur = projection(unipertur, 10 ** 3, np.inf)
+    print("End of epcoh: %d, fooling rate: %f"%(epoch, float(n_fooled) / len(audios)))
