@@ -233,20 +233,17 @@ for i in range(MAX):
             print("\n".join(res2))
 
         
-    # sess.run(original.assign(np.array(audio)))
+    sess.run(tforiginal.assign(np.array(audio) + unipertur))
     feed_dict = {}
     # Minimize delta
     for i in range(10):
         # Actually do the optimization ste
-        print("before actually optimization")
         d, el, cl, l, logits, new_input, _ = sess.run((tfdelta, tfexpanded_loss,
                                                         tfctcloss, tfloss,
                                                         tflogits, tfnew_input,
                                                         train),
                                                         feed_dict)
-        print("after actually optimization")
-    print("Minizied Once")
-    # unipertur += delta
+    unipertur += d
             
     # Report progress
     print("%.3f"%np.mean(cl), "\t", "\t".join("%.3f"%x for x in cl))
