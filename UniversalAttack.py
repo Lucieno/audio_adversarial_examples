@@ -82,8 +82,8 @@ def projection(v, eps, p):
 
 class Args:
     def __init__(self):
-        self.n_input = 70
-        self.n_train = 50
+        self.n_input = 128
+        self.n_train = 85
         self.n_test = self.n_input - self.n_train
         self.input = ["./audios/%04d.wav"%i for i in range(self.n_input)]
         self.target = "example"
@@ -280,7 +280,7 @@ for epoch in range(MAX):
                     # Here we print the strings that are recognized.
                     res = ["".join(toks[int(x)] for x in y).replace("-","") for y in res] 
                     if i == 0 and res[0] == args.target:
-                        if idx_audio > args.n_train:
+                        if idx_audio < args.n_train:
                             n_fooled_train += 1
                         else:
                             n_fooled_test += 1
@@ -289,10 +289,6 @@ for epoch in range(MAX):
                     res2 = np.argmax(logits,axis=2).T
                     res2 = ["".join(toks[int(x)] for x in y[:(l-1)//320]) for y,l in zip(res2,audio_lengths)]
                     print("\n".join(res2))
-
-            if idx_audio >= args.n_train:
-                print("It was TEST")
-                break
 
             feed_dict = {}
             # Minimize delta
@@ -306,6 +302,9 @@ for epoch in range(MAX):
             cur_loss = np.mean(cl)
             if i % 10 == 0:
                 print("%.3f"%np.mean(cl), "\t", "\t".join("%.3f"%x for x in cl))
+            if idx_audio >= args.n_train:
+                print("It was TEST")
+                break
 
             logits = np.argmax(logits,axis=2).T
             for ii in range(batch_size):
@@ -345,15 +344,17 @@ for epoch in range(MAX):
             if cur_loss < 1:
                 break
 
-        print("delta L2:", np.mean(np.square(d)))
-        print("delta dB:", cal_dB(d))
-        unipertur += d
-        unipertur = projection(unipertur, project_eps, np.inf)
+        if idx_audio < args.n_train:
+            print("delta L2:", np.mean(np.square(d)))
+            print("delta dB:", cal_dB(d))
+            unipertur += d
+            unipertur = projection(unipertur, project_eps, np.inf)
     fool_rate_train = float(n_fooled_train) / args.n_train
     fool_rate_test = float(n_fooled_test) / args.n_test
     print("End of epcoh: %d, training fooling rate: %f, testing fooling rate: %f, project_eps: %f"%(epoch, fool_rate_train, fool_rate_test, project_eps))
     if fool_rate_test > 0.75:
-        project_eps /= float(10 ** (5/20))
+        # project_eps /= float(10 ** (5/20))
+        project_eps *= 0.8
     wav.write("./audios/unipertur.wav", 16000,
                 np.array(np.clip(np.round(unipertur[0]), -2**15, 2**15-1),dtype=np.int16))
 
