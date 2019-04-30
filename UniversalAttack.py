@@ -101,7 +101,9 @@ sess = tf.Session()
 finetune = []
 audios = []
 audio_lengths = []
-project_eps = 10 ** (75/20.)
+# project_eps = 10 ** (75/20.)
+project_eps = 2303.350347178
+read_unipertur = np.array(wav.read("./audios/unipertur.wav"))
 
 if args.out is None:
     assert args.outprefix is not None
@@ -157,6 +159,7 @@ tfrescale = tf.Variable(np.zeros((batch_size,1), dtype=np.float32), name='qq_phr
 tfimportance = tf.Variable(np.zeros((batch_size, phrase_length), dtype=np.float32), name='qq_importance')
 
 unipertur = np.zeros((batch_size, max_audio_len), dtype=np.float32)
+unipertur += np.array(read_unipertur)
 
 # Initially we bound the l_infty norm by 2000, increase this
 # constant if it's not big enough of a distortion for your dataset.
