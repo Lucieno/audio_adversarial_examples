@@ -37,7 +37,7 @@ python3 make_checkpoint.py
 
 6. Generate adversarial examples
 ```
-python UniversalAttack.py
+python3 UniversalAttack.py
 ```
 
 # WARNING
