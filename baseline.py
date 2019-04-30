@@ -71,7 +71,7 @@ finetune = []
 audios = []
 audio_lengths = []
 # project_eps = 10 ** (75/20.)
-project_eps = 2303.350347178
+project_eps = 10 ** (75/20.) * (0.8 ** 2)
 _, read_unipertur = np.array(wav.read("./audios/example.wav"))
 read_unipertur = np.array(read_unipertur)
 
@@ -220,7 +220,8 @@ for idx_audio in audio_indices:
     audio = audios[idx_audio]
     print("unipertur L2:", np.mean(np.square(unipertur)))
     print("unipertur dB:", cal_dB(unipertur))
-    sess.run(tforiginal.assign(np.array(audio) + unipertur))
+    original = np.array(audio) + unipertur
+    sess.run(tforiginal.assign(original))
     sess.run(tf.variables_initializer([tfdelta]))
     # sess.run(tforiginal.assign(np.array(audio)))
     sess.run(tflengths.assign((np.array([audio_lengths[idx_audio]])-1)//320))
@@ -270,6 +271,9 @@ for idx_audio in audio_indices:
     print("%.3f"%np.mean(cl), "\t", "\t".join("%.3f"%x for x in cl))
     if idx_audio >= args.n_train:
         print("It was TEST")
+    if idx_audio == 0:
+        wav.write("./audios/baseline_adv%4d.wav"%idx_audio, 16000, np.array(np.clip(np.round(original), -2**15, original2**15-1),dtype=np.int16))
+
 
 fool_rate_train = float(n_fooled_train) / args.n_train
 fool_rate_test = float(n_fooled_test) / args.n_test
