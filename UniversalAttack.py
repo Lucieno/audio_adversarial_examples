@@ -355,7 +355,6 @@ for epoch in range(MAX):
     if fool_rate_test > 0.75:
         # project_eps /= float(10 ** (5/20))
         project_eps *= 0.8
-    wav.write("./audios/unipertur.wav", 16000,
-                np.array(np.clip(np.round(unipertur[0]), -2**15, 2**15-1),dtype=np.int16))
+        wav.write("./audios/unipertur.wav", 16000, np.array(np.clip(np.round(unipertur[0]), -2**15, 2**15-1),dtype=np.int16))
 
 sess.close()
