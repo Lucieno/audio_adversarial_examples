@@ -101,8 +101,8 @@ sess = tf.Session()
 finetune = []
 audios = []
 audio_lengths = []
-# project_eps = 10 ** (75/20.)
-project_eps = 2303.350347178
+project_eps = 10 ** (85/20.)
+# project_eps = 2303.350347178
 read_unipertur = np.array(wav.read("./audios/unipertur.wav"))
 
 if args.out is None:
@@ -159,7 +159,7 @@ tfrescale = tf.Variable(np.zeros((batch_size,1), dtype=np.float32), name='qq_phr
 tfimportance = tf.Variable(np.zeros((batch_size, phrase_length), dtype=np.float32), name='qq_importance')
 
 unipertur = np.zeros((batch_size, max_audio_len), dtype=np.float32)
-unipertur += np.array(read_unipertur)
+# unipertur += np.array(read_unipertur)
 
 # Initially we bound the l_infty norm by 2000, increase this
 # constant if it's not big enough of a distortion for your dataset.
@@ -355,7 +355,7 @@ for epoch in range(MAX):
     fool_rate_train = float(n_fooled_train) / args.n_train
     fool_rate_test = float(n_fooled_test) / args.n_test
     print("End of epcoh: %d, training fooling rate: %f, testing fooling rate: %f, project_eps: %f"%(epoch, fool_rate_train, fool_rate_test, project_eps))
-    if fool_rate_test > 0.75:
+    if fool_rate_test > 0.90:
         # project_eps /= float(10 ** (5/20))
         project_eps *= 0.8
         wav.write("./audios/unipertur.wav", 16000, np.array(np.clip(np.round(unipertur[0]), -2**15, 2**15-1),dtype=np.int16))

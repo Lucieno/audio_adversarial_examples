@@ -63,15 +63,18 @@ class Args:
         self.iterations = 100
         self.each_train = 21
         self.l2penalty = float('inf')
+        self.rescale_original = 20
+        self.rescale_noise = -8
 
 args = Args()
 
+print('rescale: original: %d, noise: %d, total: %d', args.rescale_original, args.rescale_noise, args.rescale_original - args.rescale_noise)
 sess = tf.Session()
 finetune = []
 audios = []
 audio_lengths = []
 # project_eps = 10 ** (75/20.)
-project_eps = 10 ** (75/20.) * (0.8 ** 2)
+project_eps = 10 ** (75/20.) * (0.8 ** args.rescale_noise)
 _, read_unipertur = np.array(wav.read("./audios/example.wav"))
 read_unipertur = np.array(read_unipertur)
 
@@ -101,6 +104,9 @@ for i in range(len(args.input)):
 
 maxlen = max(map(len,audios))
 audios = np.array([x+[0]*(maxlen-len(x)) for x in audios])
+print('audios.dtype', audios.dtype)
+audios = np.array(audios * (0.8 ** args.rescale_original), dtype=np.int64)
+print('audios.dtype', audios.dtype)
 finetune = np.array([x+[0]*(maxlen-len(x)) for x in finetune])
 
 phrase = args.target
@@ -130,8 +136,6 @@ tfimportance = tf.Variable(np.zeros((batch_size, phrase_length), dtype=np.float3
 
 unipertur = np.zeros((batch_size, max_audio_len), dtype=np.float32)
 unipertur = np.clip(np.random.normal(0, project_eps, size=unipertur.shape), -project_eps, project_eps)
-print('read_unipertur.shape', read_unipertur.shape)
-print('unipertur.shape', unipertur.shape)
 unipertur[0, :read_unipertur.shape[0]] = read_unipertur * 10 ** ((cal_dB(project_eps) - cal_dB(read_unipertur))/20.)
 wav.write("./audios/baseline_noise.wav", 16000, np.array(np.clip(np.round(unipertur[0]), -2**15, 2**15-1),dtype=np.int16))
 
@@ -209,6 +213,8 @@ final_deltas = [None]*batch_size
 if finetune is not None and len(finetune) > 0:
     sess.run(tfdelta.assign(finetune-audio))
 
+print('rescale: original: %d, noise: %d, total: %d', args.rescale_original, args.rescale_noise, cal_dB(unipertur) - cal_dB(audios[0]))
+
 # We'll make a bunch of iterations of gradient descent here
 now = time.time()
 n_fooled_test = 0
@@ -247,7 +253,7 @@ for idx_audio in audio_indices:
 
         # Here we print the strings that are recognized.
         res = ["".join(toks[int(x)] for x in y).replace("-","") for y in res] 
-        if i == 0 and res[0] == args.target:
+        if res[0] == args.target:
             if idx_audio < args.n_train:
                 n_fooled_train += 1
             else:
@@ -272,11 +278,12 @@ for idx_audio in audio_indices:
     if idx_audio >= args.n_train:
         print("It was TEST")
     if idx_audio == 0:
-        wav.write("./audios/baseline_adv%4d.wav"%idx_audio, 16000, np.array(np.clip(np.round(original[0]), -2**15, 2**15-1),dtype=np.int16))
+        wav.write("./audios/baseline_adv%04d.wav"%idx_audio, 16000, np.array(np.clip(np.round(original[0]), -2**15, 2**15-1),dtype=np.int16))
 
 
 fool_rate_train = float(n_fooled_train) / args.n_train
 fool_rate_test = float(n_fooled_test) / args.n_test
 print("training fooling rate: %f, testing fooling rate: %f, project_eps: %f"%(fool_rate_train, fool_rate_test, project_eps))
+print('rescale: original: %d, noise: %d, total: %d', args.rescale_original, args.rescale_noise, cal_dB(unipertur) - cal_dB(audios[0]))
 
 sess.close()
