@@ -4,40 +4,51 @@ The code is based on the implementation of Nicholas Carlini and David Wagner's "
 # How to run
 
 1. Install the dependencies
-
+```
 pip3 install --user numpy scipy tensorflow-gpu==1.8.0 pandas python_speech_features
+```
 
 2. Clone the Mozilla DeepSpeech repository into a folder called DeepSpeech:
-
+```
 git clone https://github.com/mozilla/DeepSpeech.git
+```
 
 2b. Checkout the correct version of the code:
 
+```
 (cd DeepSpeech; git checkout tags/v0.1.1)
+```
 
 3. Download the DeepSpeech model
-
+```
 wget https://github.com/mozilla/DeepSpeech/releases/download/v0.1.0/deepspeech-0.1.0-models.tar.gz
 tar -xzf deepspeech-0.1.0-models.tar.gz
+```
 
 4. Verify that you have a file models/output_graph.pb, its MD5 sum should be
+```
 08a9e6e8dc450007a0df0a37956bc795.
+```
 
 5. Convert the .pb to a TensorFlow checkpoint file
-
+```
 python3 make_checkpoint.py
+```
 
 6. Generate adversarial examples
+```
+python UniversalAttack.py
+```
 
-python3 attack.py --lr 10 --in sample.wav --target "example" --out adversarial.wav
-
-7. (optional) Install the deepseech utility:
-
-pip3 install deepspeech-gpu
-
-8. Classify the generated phrase
-
-deepspeech models/output_graph.pb adversarial.wav models/alphabet.txt
+# 7. (optional) Install the deepseech utility:
+# ```
+# pip3 install deepspeech-gpu
+# ```
+# 
+# 8. Classify the generated phrase
+# ```
+# deepspeech models/output_graph.pb adversarial.wav models/alphabet.txt
+# ```
 
 # WARNING
 

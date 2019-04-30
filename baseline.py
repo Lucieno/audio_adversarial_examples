@@ -272,7 +272,7 @@ for idx_audio in audio_indices:
     if idx_audio >= args.n_train:
         print("It was TEST")
     if idx_audio == 0:
-        wav.write("./audios/baseline_adv%4d.wav"%idx_audio, 16000, np.array(np.clip(np.round(original), -2**15, original2**15-1),dtype=np.int16))
+        wav.write("./audios/baseline_adv%4d.wav"%idx_audio, 16000, np.array(np.clip(np.round(original[0]), -2**15, 2**15-1),dtype=np.int16))
 
 
 fool_rate_train = float(n_fooled_train) / args.n_train
