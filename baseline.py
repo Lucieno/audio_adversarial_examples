@@ -72,7 +72,8 @@ audios = []
 audio_lengths = []
 # project_eps = 10 ** (75/20.)
 project_eps = 2303.350347178
-read_unipertur = np.array(wav.read("./audios/example.wav"))
+_, read_unipertur = np.array(wav.read("./audios/example.wav"))
+read_unipertur = np.array(read_unipertur)
 
 if args.out is None:
     assert args.outprefix is not None
@@ -128,8 +129,11 @@ tfrescale = tf.Variable(np.zeros((batch_size,1), dtype=np.float32), name='qq_phr
 tfimportance = tf.Variable(np.zeros((batch_size, phrase_length), dtype=np.float32), name='qq_importance')
 
 unipertur = np.zeros((batch_size, max_audio_len), dtype=np.float32)
-unipertur = np.clip(np.random.normal(0, project_eps, size=unipertur.shape), -project_eps, -project_eps)
-unipertur[:read_unipertur.shape[0]] = read_unipertur
+unipertur = np.clip(np.random.normal(0, project_eps, size=unipertur.shape), -project_eps, project_eps)
+print('read_unipertur.shape', read_unipertur.shape)
+print('unipertur.shape', unipertur.shape)
+unipertur[0, :read_unipertur.shape[0]] = read_unipertur * 10 ** ((cal_dB(project_eps) - cal_dB(read_unipertur))/20.)
+wav.write("./audios/baseline_noise.wav", 16000, np.array(np.clip(np.round(unipertur[0]), -2**15, 2**15-1),dtype=np.int16))
 
 # Initially we bound the l_infty norm by 2000, increase this
 # constant if it's not big enough of a distortion for your dataset.
@@ -208,6 +212,7 @@ if finetune is not None and len(finetune) > 0:
 # We'll make a bunch of iterations of gradient descent here
 now = time.time()
 n_fooled_test = 0
+n_fooled_train = 0
 audio_indices = list(range(len(audios)))
 for idx_audio in audio_indices:
     print("=" * 40)
@@ -265,13 +270,7 @@ for idx_audio in audio_indices:
     print("%.3f"%np.mean(cl), "\t", "\t".join("%.3f"%x for x in cl))
     if idx_audio >= args.n_train:
         print("It was TEST")
-        break
 
-    if idx_audio < args.n_train:
-        print("delta L2:", np.mean(np.square(d)))
-        print("delta dB:", cal_dB(d))
-        unipertur += d
-        unipertur = projection(unipertur, project_eps, np.inf)
 fool_rate_train = float(n_fooled_train) / args.n_train
 fool_rate_test = float(n_fooled_test) / args.n_test
 print("training fooling rate: %f, testing fooling rate: %f, project_eps: %f"%(fool_rate_train, fool_rate_test, project_eps))

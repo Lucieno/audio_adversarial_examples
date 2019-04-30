@@ -1,15 +1,7 @@
-This is the code corresponding to the paper
-"Audio Adversarial Examples: Targeted Attacks on Speech-to-Text"
-Nicholas Carlini and David Wagner
-https://arxiv.org/abs/1801.01944
+# Claim
+The code is based on the implementation of Nicholas Carlini and David Wagner's "Audio Adversarial Examples: Targeted Attacks on Speech-to-Text"
 
-To generate adversarial examples for your own files, follow the below process
-and modify the arguments to attack,py. Ensure that the file is sampled at
-16KHz and uses signed 16-bit ints as the data type. You may want to modify
-the number of iterations that the attack algorithm is allowed to run.
-
-
-Instructions for basic use:
+# How to run
 
 1. Install the dependencies
 
@@ -47,10 +39,9 @@ pip3 install deepspeech-gpu
 
 deepspeech models/output_graph.pb adversarial.wav models/alphabet.txt
 
+# WARNING
 
----
-
-WARNING: THE CODE TO HOOK INTO DEEPSPEECH IS UGLY. This means I require a
+THE CODE TO HOOK INTO DEEPSPEECH IS UGLY. This means I require a
 very specific version of DeepSpeech (0.1.1) and TensorFlow (1.8.0) using
 python 3.5. I can't promise it won't set your computer on fire if you use
 any other versioning setup. (In particular, it WILL NOT work with
