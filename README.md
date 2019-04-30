@@ -40,16 +40,6 @@ python3 make_checkpoint.py
 python UniversalAttack.py
 ```
 
-# 7. (optional) Install the deepseech utility:
-# ```
-# pip3 install deepspeech-gpu
-# ```
-# 
-# 8. Classify the generated phrase
-# ```
-# deepspeech models/output_graph.pb adversarial.wav models/alphabet.txt
-# ```
-
 # WARNING
 
 THE CODE TO HOOK INTO DEEPSPEECH IS UGLY. This means I require a
